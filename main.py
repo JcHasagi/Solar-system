@@ -95,47 +95,95 @@ def mouse_click(world: PolvoEstelar, mouse_x: int, mouse_y: int) -> None:
 def main():
     pygame.init()
     pygame.font.init()
+
+    play_img = pygame.image.load("play.png")
+    pause_img = pygame.image.load("pause.png")
+    save_img = pygame.image.load("save.png")
+    load_img = pygame.image.load("load.png")
+    clear_img = pygame.image.load("clear.png")
+
+    button_size = 50
+    button_spacing = 20
+    total_width = 5 * button_size + 4 * button_spacing
+    start_x = (width - total_width) // 2
+    y_pos = height - button_size - 10
+
+    button_rects = {
+        "play": pygame.Rect(start_x + 0 * (button_size + button_spacing), y_pos, button_size, button_size),
+        "pause": pygame.Rect(start_x + 1 * (button_size + button_spacing), y_pos, button_size, button_size),
+        "save": pygame.Rect(start_x + 2 * (button_size + button_spacing), y_pos, button_size, button_size),
+        "load": pygame.Rect(start_x + 3 * (button_size + button_spacing), y_pos, button_size, button_size),
+        "clear": pygame.Rect(start_x + 4 * (button_size + button_spacing), y_pos, button_size, button_size),
+    }
+
     screen = pygame.display.set_mode(size)
     pygame.display.set_caption("Simulación de Polvo Estelar y Planeta")
 
     clock = pygame.time.Clock()
-    running = False
+    paused = True
     world = PolvoEstelar()
     iterations = 0
 
     font = pygame.font.SysFont('Consolas', 24)
-    info_text = font.render("Click para poner/quitar polvo. ESPACIO iniciar/pausar. R reiniciar.", True, white)
 
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 print("End.")
                 sys.exit()
-            elif event.type == pygame.MOUSEBUTTONDOWN and not running:
-                x, y = pygame.mouse.get_pos()
-                mouse_click(world, x, y)
+
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mx, my = event.pos
+                if button_rects["play"].collidepoint(mx, my):
+                    paused = False
+                elif button_rects["pause"].collidepoint(mx, my):
+                    paused = True
+                elif button_rects["save"].collidepoint(mx, my):
+                    file_path = filedialog.asksaveasfilename(defaultextension=".txt")
+                    if file_path:
+                        with open(file_path, 'w') as f:
+                            for row in world.grid:
+                                f.write(' '.join(str(cell) for cell in row) + '\n')
+                elif button_rects["load"].collidepoint(mx, my):
+                    file_path = filedialog.askopenfilename()
+                    if file_path:
+                        with open(file_path, 'r') as f:
+                            lines = f.readlines()
+                            for i, line in enumerate(lines):
+                                row = list(map(int, line.strip().split()))
+                                world.grid[i] = row
+                elif button_rects["clear"].collidepoint(mx, my):
+                    world.reset()
+                else:
+                    mouse_click(world, mx, my)
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_SPACE:
-                    running = not running
+                    paused = not paused
                 elif event.key == pygame.K_r:
-                    running = False
+                    paused = True
                     world.reset()
                     iterations = 0
 
-        if running:
+        if not paused:
             world.update()
             iterations += 1
 
         screen.fill(black)
         world.draw(screen)
-        screen.blit(info_text, (10, height - 30))
 
-        status = "CORRIENDO" if running else "PAUSA - Editando"
+        status = "CORRIENDO" if not paused else "PAUSA - Editando"
         status_text = font.render(f"Estado: {status}", True, white)
-        screen.blit(status_text, (width - 260, height - 30))
+        screen.blit(status_text, (10, 10))
 
         iterations_text = font.render(f"Iteraciones: {iterations}", True, white)
-        screen.blit(iterations_text, (width - 220, 10))
+        screen.blit(iterations_text, (10, 40))
+
+        screen.blit(play_img, button_rects["play"].topleft)
+        screen.blit(pause_img, button_rects["pause"].topleft)
+        screen.blit(save_img, button_rects["save"].topleft)
+        screen.blit(load_img, button_rects["load"].topleft)
+        screen.blit(clear_img, button_rects["clear"].topleft)
 
         pygame.display.flip()
         clock.tick(10)
