@@ -7,7 +7,9 @@ import random
 root = tk.Tk()
 root.withdraw()
 
-size = width, height = 1000, 564
+width, height = 1920, 1080
+size = (width, height)
+
 black = (0, 0, 0)
 white = (255, 255, 255)
 
@@ -61,27 +63,26 @@ class Universo:
                 vecinos_planeta = self.count_neighbors(i, j, PLANETA)
                 vecinos_estrella = self.count_neighbors(i, j, ESTRELLA)
 
+
                 if estado == POLVO:
-                    if vecinos_totales == 2 or vecinos_totales == 3:
-                        self.next_grid[i][j] = POLVO if random.random() > 0.02 else VACIO
+                    # Crear planeta si hay buena acumulación de polvo
+                    if vecinos_polvo >= 5 and random.random() < 0.08:
+                        self.next_grid[i][j] = PLANETA
+                    elif vecinos_totales == 2 or vecinos_totales == 3:
+                        self.next_grid[i][j] = POLVO if random.random() > 0.01 else VACIO
                     else:
                         self.next_grid[i][j] = VACIO
 
-                elif estado == PLANETA:
-                    # Condiciones más fáciles para subsistir
-                    puede_vivir = (
-                        vecinos_planeta >= 2 or
-                        vecinos_estrella >= 1 or
-                        vecinos_polvo >= 2
-                    )
-                    si_forma_estrella = vecinos_planeta + vecinos_estrella >= 6
 
-                    if si_forma_estrella:
-                        self.next_grid[i][j] = ESTRELLA
-                    elif puede_vivir:
+                elif estado == PLANETA:
+                    if vecinos_planeta >= 2 or vecinos_polvo >= 3:
                         self.next_grid[i][j] = PLANETA
-                    else:
+                    elif random.random() < 0.03:
                         self.next_grid[i][j] = POLVO
+                    else:
+                        self.next_grid[i][j] = VACIO
+
+
 
                 elif estado == ESTRELLA:
                     if vecinos_totales >= 2:
@@ -215,7 +216,7 @@ def main():
     for i, b in enumerate(buttons):
         button_rects[b] = pygame.Rect(start_x + i*(button_size + button_spacing), y_pos, button_size, button_size)
 
-    screen = pygame.display.set_mode(size)
+    screen = pygame.display.set_mode(size, pygame.FULLSCREEN)
     pygame.display.set_caption("Simulación de Sistemas Solares - Polvo, Planetas, Estrellas y Cometas")
 
     clock = pygame.time.Clock()
@@ -320,5 +321,5 @@ def main():
         pygame.display.flip()
         clock.tick(10)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
