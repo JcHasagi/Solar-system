@@ -13,7 +13,6 @@ size = (width, height)
 black = (0, 0, 0)
 white = (255, 255, 255)
 
-# Colores base para las entidades
 planet_color = (200, 120, 50, 255)
 star_color_base = (255, 255, 100, 255)
 comet_color = (255, 255, 255, 200)
@@ -63,9 +62,7 @@ class Universo:
                 vecinos_planeta = self.count_neighbors(i, j, PLANETA)
                 vecinos_estrella = self.count_neighbors(i, j, ESTRELLA)
 
-
                 if estado == POLVO:
-                    # Crear planeta si hay buena acumulación de polvo
                     if vecinos_polvo >= 5 and random.random() < 0.08:
                         self.next_grid[i][j] = PLANETA
                     elif vecinos_totales == 2 or vecinos_totales == 3:
@@ -73,16 +70,15 @@ class Universo:
                     else:
                         self.next_grid[i][j] = VACIO
 
-
                 elif estado == PLANETA:
-                    if vecinos_planeta >= 2 or vecinos_polvo >= 3:
+                    if vecinos_planeta >= 4:
+                        self.next_grid[i][j] = ESTRELLA
+                    elif vecinos_planeta >= 2 or vecinos_polvo >= 3:
                         self.next_grid[i][j] = PLANETA
                     elif random.random() < 0.03:
                         self.next_grid[i][j] = POLVO
                     else:
                         self.next_grid[i][j] = VACIO
-
-
 
                 elif estado == ESTRELLA:
                     if vecinos_totales >= 2:
@@ -93,7 +89,7 @@ class Universo:
                 elif estado == COMETA:
                     self.next_grid[i][j] = VACIO
 
-                else:  # VACÍO
+                else:
                     if vecinos_totales == 3:
                         self.next_grid[i][j] = POLVO
                     else:
@@ -102,26 +98,16 @@ class Universo:
         self.grid, self.next_grid = self.next_grid, self.grid
         self.mover_cometas()
 
-
-
     def mover_cometas(self):
         nuevos_cometas = []
         for x, y in self.cometas:
-            # Limpia la posición anterior
             self.grid[y][x] = VACIO
-
-            # Mueve hacia arriba y hacia la derecha para mayor dinamismo
             if y > 0:
                 y -= 1
             x = (x + 1) % cols
-
-            # Solo pone cometa si no hay estrella (no atraviesa estrellas)
             if self.grid[y][x] != ESTRELLA:
                 self.grid[y][x] = COMETA
                 nuevos_cometas.append((x, y))
-            else:
-                # Si choca con estrella, desaparece
-                pass
         self.cometas = nuevos_cometas
 
     def crear_cometa(self, x, y):
@@ -137,7 +123,7 @@ class Universo:
                 self.crear_cometa(x, y)
             elif modo == 'planeta':
                 self.grid[y][x] = PLANETA
-            else:  # polvo
+            else:
                 actual = self.grid[y][x]
                 self.grid[y][x] = VACIO if actual == POLVO else POLVO
 
@@ -147,20 +133,14 @@ class Universo:
                 estado = self.grid[i][j]
                 if estado == POLVO:
                     vecinos = self.count_neighbors(i, j)
-
-                    # Restaurar tonos originales, amarillentos y azulados
                     alpha = min(255, int((0.1 + vecinos*0.15)*255))
-
                     r = min(255, 180 + vecinos*10)
                     g = max(0, 180 - vecinos*60)
                     b = min(255, 220 + vecinos*15)
-
-                    # Pequeño flicker para el brillo
                     flicker = random.randint(-20, 20)
                     r = max(0, min(255, r + flicker))
                     g = max(0, min(255, g + flicker))
                     b = max(0, min(255, b + flicker))
-
                     color = (r, g, b, alpha)
                     s = pygame.Surface((cell_size, cell_size), pygame.SRCALPHA)
                     s.fill(color)
@@ -194,7 +174,6 @@ def main():
     pygame.init()
     pygame.font.init()
 
-    # Carga imágenes de botones (debes tener estas imágenes)
     play_img = pygame.image.load("play.png")
     pause_img = pygame.image.load("pause.png")
     save_img = pygame.image.load("save.png")
@@ -223,7 +202,7 @@ def main():
     paused = True
     universo = Universo()
     iterations = 0
-    modo_actual = 'polvo'  # polvo, estrella, cometa, planeta
+    modo_actual = 'polvo'
 
     font = pygame.font.SysFont('Consolas', 24)
 
@@ -307,7 +286,6 @@ def main():
         modo_text = font.render(f"Modo actual: {modo_actual.upper()} (1-polvo, 2-estrella, 3-cometa, 4-planeta)", True, white)
         screen.blit(modo_text, (10, 70))
 
-        # Dibujar botones con iconos
         screen.blit(play_img, button_rects["play"].topleft)
         screen.blit(pause_img, button_rects["pause"].topleft)
         screen.blit(save_img, button_rects["save"].topleft)
