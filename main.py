@@ -56,61 +56,52 @@ class Universo:
         for i in range(rows):
             for j in range(cols):
                 estado = self.grid[i][j]
-                vecinos = self.count_neighbors(i, j)
+                vecinos_totales = self.count_neighbors(i, j)
+                vecinos_polvo = self.count_neighbors(i, j, POLVO)
+                vecinos_planeta = self.count_neighbors(i, j, PLANETA)
+                vecinos_estrella = self.count_neighbors(i, j, ESTRELLA)
 
                 if estado == POLVO:
-                    # Polvo: sobrevive con 2 o 3 vecinos polvo, y puede aparecer espontáneamente
-                    polvo_vecinos = self.count_neighbors(i, j, POLVO)
-                    if polvo_vecinos == 2 or polvo_vecinos == 3:
-                        # Pequeña probabilidad de desaparición
+                    if vecinos_totales == 2 or vecinos_totales == 3:
                         self.next_grid[i][j] = POLVO if random.random() > 0.02 else VACIO
                     else:
                         self.next_grid[i][j] = VACIO
 
                 elif estado == PLANETA:
-                    # Planeta se convierte en estrella si tiene 6 o más planetas vecinos
-                    planetas_vecinos = self.count_neighbors(i, j, PLANETA)
-                    if planetas_vecinos >= 6:
+                    # Condiciones más fáciles para subsistir
+                    puede_vivir = (
+                        vecinos_planeta >= 2 or
+                        vecinos_estrella >= 1 or
+                        vecinos_polvo >= 2
+                    )
+                    si_forma_estrella = vecinos_planeta + vecinos_estrella >= 6
+
+                    if si_forma_estrella:
                         self.next_grid[i][j] = ESTRELLA
-                    elif vecinos < 4:
-                        # Si poca actividad se degrada a polvo
-                        self.next_grid[i][j] = POLVO
-                    else:
+                    elif puede_vivir:
                         self.next_grid[i][j] = PLANETA
+                    else:
+                        self.next_grid[i][j] = POLVO
 
                 elif estado == ESTRELLA:
-                    # Estrella se mantiene si tiene al menos 3 vecinos, sino baja a planeta
-                    if vecinos < 3:
-                        self.next_grid[i][j] = PLANETA
-                    else:
+                    if vecinos_totales >= 2:
                         self.next_grid[i][j] = ESTRELLA
+                    else:
+                        self.next_grid[i][j] = PLANETA
 
                 elif estado == COMETA:
-                    # Cometa afecta vecinos: si toca polvo, lo convierte en vacío (quemándolo)
                     self.next_grid[i][j] = VACIO
 
-                    # También puede "quemar" celdas alrededor (vecinos inmediatos)
-                    for di in [-1,0,1]:
-                        for dj in [-1,0,1]:
-                            r = (i + di) % rows
-                            c = (j + dj) % cols
-                            if self.grid[r][c] == POLVO or self.grid[r][c] == PLANETA:
-                                self.next_grid[r][c] = VACIO
-
-                else:  # VACIO
-                    # Nace polvo si tiene 3 vecinos polvo
-                    polvo_vecinos = self.count_neighbors(i, j, POLVO)
-                    if polvo_vecinos == 3:
+                else:  # VACÍO
+                    if vecinos_totales == 3:
                         self.next_grid[i][j] = POLVO
                     else:
-                        # Pequeña aparición espontánea polvo para mantener dinámica
                         self.next_grid[i][j] = POLVO if random.random() < 0.001 else VACIO
 
-        # Intercambia grids
         self.grid, self.next_grid = self.next_grid, self.grid
-
-        # Mover cometas
         self.mover_cometas()
+
+
 
     def mover_cometas(self):
         nuevos_cometas = []
